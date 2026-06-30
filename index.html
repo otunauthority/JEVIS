@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.E.V.I.S.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap');
+        body { font-family: 'Orbitron', sans-serif; background: #050505; color: #00ff9f; }
+        .hud { background: rgba(5, 5, 15, 0.97); border: 2px solid #00ff9f; box-shadow: 0 0 50px rgba(0, 255, 159, 0.7); }
+        .scanline { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 50%, rgba(0, 255, 159, 0.2) 50%); background-size: 100% 3px; animation: scan 2.5s linear infinite; pointer-events: none; }
+        @keyframes scan { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-black">
+    <div class="max-w-4xl w-full">
+        <div class="hud rounded-3xl p-8 relative overflow-hidden">
+            <div class="scanline"></div>
+            
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-cyan-400 flex items-center justify-center text-black font-bold text-3xl">J</div>
+                    <div>
+                        <h1 class="text-4xl font-bold tracking-widest text-cyan-300">J.E.V.I.S.</h1>
+                        <p class="text-xs text-cyan-400">Just Epidexios Very Intelligent System</p>
+                    </div>
+                </div>
+                <button onclick="clearMemory()" class="text-red-400 hover:text-red-500 text-sm">Reset Memory</button>
+            </div>
+
+            <div id="chatArea" class="h-96 overflow-y-auto mb-6 space-y-5 pr-4"></div>
+
+            <div class="flex gap-3">
+                <input type="text" id="input" class="flex-1 bg-black border border-cyan-400 rounded-2xl px-6 py-5 text-lg focus:outline-none" placeholder="Command me, Master Epidexios...">
+                <button onclick="sendMessage()" class="bg-cyan-500 hover:bg-cyan-400 text-black px-8 py-5 rounded-2xl font-bold">SEND</button>
+                <button onclick="startVoiceInput()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-5 rounded-2xl font-bold">🎤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let history = JSON.parse(localStorage.getItem('jevisHistory')) || [];
+
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const msg = input.value.trim();
+            if (!msg) return;
+
+            addMessage("You", msg);
+            input.value = "";
+
+            history.push({role: "user", content: msg});
+            localStorage.setItem('jevisHistory', JSON.stringify(history));
+
+            const res = await fetch("http://127.0.0.1:8000/chat", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ message: msg, history: history })
+            });
+
+            const data = await res.json();
+            addMessage("J.E.V.I.S.", data.response);
+
+            history.push({role: "assistant", content: data.response});
+            localStorage.setItem('jevisHistory', JSON.stringify(history));
+        }
+
+        function addMessage(sender, text) {
+            const chat = document.getElementById('chatArea');
+            const div = document.createElement('div');
+            div.className = sender === "You" ? "text-right" : "text-left";
+            div.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function startVoiceInput() {
+            if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+                const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                rec.onresult = (e) => {
+                    document.getElementById('input').value = e.results[0][0].transcript;
+                    sendMessage();
+                };
+                rec.start();
+            }
+        }
+
+        function clearMemory() {
+            if (confirm("Reset all memory, Master Epidexios?")) {
+                history = [];
+                localStorage.removeItem('jevisHistory');
+                document.getElementById('chatArea').innerHTML = '';
+            }
+        }
+
+        window.sendMessage = sendMessage;
+        window.startVoiceInput = startVoiceInput;
+        window.clearMemory = clearMemory;
+    </script>
+</body>
+</html>
