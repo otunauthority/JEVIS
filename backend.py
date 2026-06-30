@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from groq import Groq
 
-app = FastAPI(title="J.E.V.I.S. Backend")
+app = FastAPI(title="J.E.V.I.S Backend")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,7 +22,7 @@ class Message(BaseModel):
 @app.post("/chat")
 async def chat(data: Message):
     try:
-        messages = [{"role": "system", "content": "You are J.E.V.I.S., a highly intelligent, warm, female AI assistant to Master Epidexios. Be witty, loyal, and efficient like JARVIS from Iron Man."}]
+        messages = [{"role": "system", "content": "You are J.E.V.I.S, a highly intelligent, warm, female AI assistant to Master Epidexios. Be witty, loyal, and efficient like JARVIS from Iron Man."}]
         messages.extend(data.history)
         messages.append({"role": "user", "content": data.message})
 
